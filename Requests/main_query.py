@@ -30,6 +30,7 @@ async def read_item_op(skip: int, limit: Optional[int] = None ): # Optional[int]
         return {"limit is not provided"}
     
 # Path와 Query Parameter를 함께 사용.
+# `item_id: str | None = None`` 이라고 작성해도 `item_id`는 Path Parameter이기에 None값이 들어가지 않고 `required`
 @app.get("/items/{item_id}")
 async def read_item(item_id: str, q: str | None = None): # 숫자는 str로 받아도 됨.
     if q:
