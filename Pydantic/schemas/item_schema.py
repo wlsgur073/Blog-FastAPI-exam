@@ -5,11 +5,11 @@ from fastapi.exceptions import RequestValidationError
 
 class Item(BaseModel):
     name: str = Field(..., min_length=2, max_length=50)
-    description: str = Field(None, max_length=500)
-    # description: Optional[str] = Field(None, max_length=500)
+    # description: str = Field(None, max_length=500)
+    description: Optional[str] = Field(None, max_length=500)
     price: float = Field(..., ge=0)
-    tax: float = None
-    # tax: Optional[float] = None
+    # tax: float = None
+    tax: Optional[float] = None
 
     @model_validator(mode='after')
     def tax_must_be_less_than_price(cls, values):
