@@ -1,10 +1,12 @@
-from fastapi import APIRouter, Request, Depends, status
+from fastapi import APIRouter, Request, Depends, Form, status
+from fastapi.responses import RedirectResponse
 from fastapi.exceptions import HTTPException
 from fastapi.templating import Jinja2Templates
 from db.database import direct_get_conn, context_get_conn
 from sqlalchemy import text, Connection
 from sqlalchemy.exc import SQLAlchemyError
 from schemas.blog_schema import Blog, BlogOutputData
+from utils import util
 
 #router object
 router = APIRouter(prefix="/blogs", tags=["blogs"])
@@ -24,37 +26,34 @@ async def get_all_blogs(req: Request): # async 쓸 필요는 없지만, 훗날 a
         all_blogs = [BlogOutputData(id = row.id
                         , title = row.title
                         , author = row.author
-                        , content = row.content
+                        , content = util.truncate_text(row.content)
                         , image_loc = row.image_loc # db 값이 Null인 경우 파이썬에서 None으로 처리됨
                         , modified_dt = row.modified_dt)
-                    for row in result] # 별도의 Pydantic Model로 받음
+                    for row in result]
         result.close()
         return templates.TemplateResponse(
             request = req,
             name = "index.html",
             context = {"all_blogs": all_blogs}
-            # context = {"all_blogs", all_blogs} # {"key", value}: Python은 집합(set)으로 해석
             )
     except SQLAlchemyError as e:
         print(e)
         raise e
     finally:
         if conn:
-            conn.close() # 그냥 닫으면 conn이 None인 경우 에러 발생할 수 있음.
+            conn.close()
 
 @router.get("/show/{id}")
 def get_blog_by_id(req: Request, id: int,
-                   conn: Connection = Depends(context_get_conn)): # context_get_conn안에서 conn.close해줌.
+                   conn: Connection = Depends(context_get_conn)):
     try:
-        # id가 동적으로 들어올때마다 재파싱을 할때마다 DB에 부하가 생기기에 bind parameter로 처리
-        # bind parameter만 변경되더라도 동일한 쿼리로 인식
         query = f"""
                 SELECT id, title, author, content, image_loc, modified_dt FROM blog
                 WHERE id = :id
                 """
         stmt = text(query)
         bind_stmt = stmt.bindparams(id=id)
-        result = conn.execute(bind_stmt) # result는 None이 아니라 record 건수를 리턴해줌.
+        result = conn.execute(bind_stmt)
         
         # 만약에 결과가 없으면 에러 던지기
         if result.rowcount == 0:
@@ -65,11 +64,44 @@ def get_blog_by_id(req: Request, id: int,
         blog = BlogOutputData(id = row.id
                         , title = row.title
                         , author = row.author
-                        , content = row.content
+                        , content = util.newline_to_br(row.content)
                         , image_loc = row.image_loc
                         , modified_dt = row.modified_dt)
         result.close()
-        return blog # Pydnaic Model이 JSON response로 serialize될때 None은 null로 처리됨 
+        return templates.TemplateResponse(
+            request = req,
+            name = "show_blog.html",
+            context = {"blog": blog}
+            )
     except SQLAlchemyError as e:
         print(e)
+        raise e
+
+@router.get("/new")
+def create_blog_ui(req: Request):
+    return templates.TemplateResponse(
+        request = req,
+        name = "new_blog.html",
+        context = {}
+        )
+    
+@router.post("/new")
+def create_blog(req: Request,
+                title: str = Form(min_length=2, max_length=100),
+                author: str = Form(max_length=100),
+                content: str = Form(min_length=2, max_length=4000),
+                conn: Connection = Depends(context_get_conn)):
+    try:
+        # sql은 문자열인 것을 표현해줘야 함.
+        query = f"""
+                INSERT INTO blog (title, author, content, modified_dt)
+                VALUES ('{title}', '{author}', '{content}', NOW())
+                """
+        conn.execute(text(query))
+        conn.commit() # SQLAlchemy에서는 기본이 rollback이기 때문에 commit을 해줘야 함.
+        
+        return RedirectResponse(url="/blogs", status_code=status.HTTP_302_FOUND)
+    except SQLAlchemyError as e:
+        print(e)
+        conn.rollback() # 안해도 conn.close하면 기본적으로 rollback이 됨. 코드의 명확함을 위해 명시.
         raise e
