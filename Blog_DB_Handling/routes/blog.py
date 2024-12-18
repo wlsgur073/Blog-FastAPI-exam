@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Request, Depends
+from fastapi import APIRouter, Request, Depends, status
+from fastapi.exceptions import HTTPException
 from db.database import direct_get_conn, context_get_conn
 from sqlalchemy import text, Connection
 from sqlalchemy.exc import SQLAlchemyError
@@ -37,12 +38,20 @@ async def get_all_blogs(req: Request): # async 쓸 필요는 없지만, 훗날 a
 def get_blog_by_id(req: Request, id: int,
                    conn: Connection = Depends(context_get_conn)): # context_get_conn안에서 conn.close해줌.
     try:
+        # id가 동적으로 들어올때마다 재파싱을 할때마다 DB에 부하가 생기기에 bind parameter로 처리
+        # bind parameter만 변경되더라도 동일한 쿼리로 인식
         query = f"""
                 SELECT id, title, author, content, image_loc, modified_dt FROM blog
-                WHERE id = {id}
+                WHERE id = :id
                 """
         stmt = text(query)
-        result = conn.execute(stmt)
+        bind_stmt = stmt.bindparams(id=id)
+        result = conn.execute(bind_stmt) # result는 None이 아니라 record 건수를 리턴해줌.
+        
+        # 만약에 결과가 없으면 에러 던지기
+        if result.rowcount == 0:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail=f"Blog with id {id} not found.")
         
         row = result.fetchone()
         blog = BlogOutputData(id = row.id
