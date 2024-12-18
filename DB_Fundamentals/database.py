@@ -36,7 +36,7 @@ def direct_get_conn():
 def context_get_conn():
     try:
         conn = engine.connect()
-        yield conn # 호출하는 쪽에서 with 절을 사용하기에 yield를 사용함.
+        yield conn # 호출하는 쪽에서 with 절을 사용하기에 yield를 사용함. #conn을 return해버리면 finally로 가버림.
     except SQLAlchemyError as e:
         print(e)
         raise e
