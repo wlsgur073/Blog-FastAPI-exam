@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Request, Depends, status
 from fastapi.exceptions import HTTPException
+from fastapi.templating import Jinja2Templates
 from db.database import direct_get_conn, context_get_conn
 from sqlalchemy import text, Connection
 from sqlalchemy.exc import SQLAlchemyError
@@ -7,6 +8,8 @@ from schemas.blog_schema import Blog, BlogOutputData
 
 #router object
 router = APIRouter(prefix="/blogs", tags=["blogs"])
+#create jinjia2 template engine
+templates = Jinja2Templates(directory="templates")
 
 @router.get("/")
 async def get_all_blogs(req: Request): # async 쓸 필요는 없지만, 훗날 async 함수로 바뀔 수 있다는 걸 강조.
@@ -18,7 +21,7 @@ async def get_all_blogs(req: Request): # async 쓸 필요는 없지만, 훗날 a
                 """
         result = conn.execute(text(query))
         
-        rows = [BlogOutputData(id = row.id
+        all_blogs = [BlogOutputData(id = row.id
                         , title = row.title
                         , author = row.author
                         , content = row.content
@@ -26,7 +29,12 @@ async def get_all_blogs(req: Request): # async 쓸 필요는 없지만, 훗날 a
                         , modified_dt = row.modified_dt)
                     for row in result] # 별도의 Pydantic Model로 받음
         result.close()
-        return rows
+        return templates.TemplateResponse(
+            request = req,
+            name = "index.html",
+            context = {"all_blogs": all_blogs}
+            # context = {"all_blogs", all_blogs} # {"key", value}: Python은 집합(set)으로 해석
+            )
     except SQLAlchemyError as e:
         print(e)
         raise e
@@ -61,7 +69,7 @@ def get_blog_by_id(req: Request, id: int,
                         , image_loc = row.image_loc
                         , modified_dt = row.modified_dt)
         result.close()
-        return blog
+        return blog # Pydnaic Model이 JSON response로 serialize될때 None은 null로 처리됨 
     except SQLAlchemyError as e:
         print(e)
         raise e
