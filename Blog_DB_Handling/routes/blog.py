@@ -103,5 +103,42 @@ def create_blog(req: Request,
         return RedirectResponse(url="/blogs", status_code=status.HTTP_302_FOUND)
     except SQLAlchemyError as e:
         print(e)
-        conn.rollback() # 안해도 conn.close하면 기본적으로 rollback이 됨. 코드의 명확함을 위해 명시.
+        conn.rollback() # 안해도 conn.close하면 기본적으로 rollback이 됨.
+        raise e
+    
+@router.get("/modify/{id}")
+def update_blog_ui(req: Request, id: int, conn = Depends(context_get_conn)):
+    try:
+        query = f"""
+                SELECT id, title, author, content FROM blog
+                WHERE id = :id
+                """
+        stmt = text(query)
+        bind_stmt = stmt.bindparams(id = id)
+        result = conn.execute(bind_stmt)
+        
+        # TODO: exception 중복 코드 발생 -> 모듈화하기
+        if result.rowcount == 0:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail=f"Blog with id {id} not found.")
+        
+        row = result.fetchone()
+        # blog = BlogOutputData(
+        #     id = id
+        #     , title = row.title
+        #     , author =row.author
+        #     , content = row.content
+        #     , modified_dt = None # dataclass를 쓸때는 Optional하지 않게 설정해서 검증 잘못되면 validation error가 발생.
+        #     )
+        return templates.TemplateResponse(
+            request = req,
+            name = "modify_blog.html",
+            context = {"id": row.id
+                       , "title": row.title
+                       , "author": row.author
+                       , "content": row.content
+                       }
+            )
+    except SQLAlchemyError as e:
+        print(e)
         raise e
