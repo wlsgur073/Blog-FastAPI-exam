@@ -93,6 +93,7 @@ def create_blog(req: Request,
                 conn: Connection = Depends(context_get_conn)):
     try:
         # sql은 문자열인 것을 표현해줘야 함.
+        # bindparams를 사용하면 알아서 문자열 처리하기에 sql injection을 방지할 수 있음.
         query = f"""
                 INSERT INTO blog (title, author, content, modified_dt)
                 VALUES ('{title}', '{author}', '{content}', NOW())
@@ -139,6 +140,34 @@ def update_blog_ui(req: Request, id: int, conn = Depends(context_get_conn)):
                        , "content": row.content
                        }
             )
+    except SQLAlchemyError as e:
+        print(e)
+        raise e
+    
+@router.post("/modify/{id}")
+def update_blog(req: Request, id: int
+                , title: str = Form(min_length=2, max_length=100)
+                , author: str = Form(max_length=100)
+                , content: str = Form(min_length=2, max_length=4000)
+                , conn: Connection = Depends(context_get_conn)):
+    try:
+        query = f"""
+                UPDATE blog
+                SET title = '{title}', author = '{author}', content = '{content}', modified_dt = NOW()
+                WHERE id = :id
+                """
+        stmt = text(query)
+        bind_stmt = stmt.bindparams(id = id)
+        result = conn.execute(bind_stmt)
+        
+        # app의 www url encoded로 오면 쿼리 파라미터에 값을 오입력할수도 있음. 그래서 예외처리함.
+        if result.rowcount == 0:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail=f"Blog with id {id} not found.")
+            
+        conn.commit()
+        
+        return RedirectResponse(url=f"/blogs/show/{id}", status_code=status.HTTP_302_FOUND)
     except SQLAlchemyError as e:
         print(e)
         raise e
