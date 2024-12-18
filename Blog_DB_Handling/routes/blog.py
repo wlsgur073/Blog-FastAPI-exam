@@ -27,7 +27,7 @@ async def get_all_blogs(req: Request): # async 쓸 필요는 없지만, 훗날 a
                         , title = row.title
                         , author = row.author
                         , content = util.truncate_text(row.content)
-                        , image_loc = row.image_loc # db 값이 Null인 경우 파이썬에서 None으로 처리됨
+                        , image_loc = row.image_loc1 # db 값이 Null인 경우 파이썬에서 None으로 처리됨
                         , modified_dt = row.modified_dt)
                     for row in result]
         result.close()
@@ -37,8 +37,13 @@ async def get_all_blogs(req: Request): # async 쓸 필요는 없지만, 훗날 a
             context = {"all_blogs": all_blogs}
             )
     except SQLAlchemyError as e:
-        print(e)
-        raise e
+        print("get_all_blogs Error: ", e)
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE # 보통 get에서는 접속 부하때문
+                            , detail="The service you requested briefly encountered an internal problem.")
+    except Exception as e: # DB에서 가져온 데이터의 필드 값이 잘못된 경우 Pydantic에서 검증해주지 않을수도 있다.
+        print("get_all_blogs Error: ", e)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+                            , detail="An unknown service error occurred. Contact the administrator.")
     finally:
         if conn:
             conn.close()
@@ -74,8 +79,10 @@ def get_blog_by_id(req: Request, id: int,
             context = {"blog": blog}
             )
     except SQLAlchemyError as e:
-        print(e)
-        raise e
+        print("get_blog_by_id Error : ", e)
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE
+                            , detail="The service you requested briefly encountered an internal problem."
+                            )
 
 @router.get("/new")
 def create_blog_ui(req: Request):
@@ -103,9 +110,10 @@ def create_blog(req: Request,
         
         return RedirectResponse(url="/blogs", status_code=status.HTTP_302_FOUND)
     except SQLAlchemyError as e:
-        print(e)
+        print("create_blog Error: ", e)
         conn.rollback() # 안해도 conn.close하면 기본적으로 rollback이 됨.
-        raise e
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST
+                            , detail="The request you made was not valid. Please check the input values.")
     
 @router.get("/modify/{id}")
 def update_blog_ui(req: Request, id: int, conn = Depends(context_get_conn)):
@@ -141,8 +149,9 @@ def update_blog_ui(req: Request, id: int, conn = Depends(context_get_conn)):
                        }
             )
     except SQLAlchemyError as e:
-        print(e)
-        raise e
+        print("update_blog_ui Error: ", e)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST
+                            , detail="The request you made was not valid. Please check the input values.")
     
 @router.post("/modify/{id}")
 def update_blog(req: Request, id: int
@@ -169,5 +178,32 @@ def update_blog(req: Request, id: int
         
         return RedirectResponse(url=f"/blogs/show/{id}", status_code=status.HTTP_302_FOUND)
     except SQLAlchemyError as e:
-        print(e)
-        raise e
+        print("update_blog Error: ", e)
+        conn.rollback()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST
+                            , detail="The request you made was not valid. Please check the input values.")
+    
+@router.post("/delete/{id}")
+def delete_blog(req: Request, id: int, conn: Connection = Depends(context_get_conn)):
+    try:
+        # oltp에서는 대부분 bdinvariables를 사용한다.
+        query = f"""
+                DELETE FROM blog
+                WHERE id = :id
+                """
+        bind_stmt = text(query).bindparams(id = id)
+        result = conn.execute(bind_stmt)
+        
+        if result.rowcount == 0:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail=f"Blog with id {id} not found.")
+            
+        conn.commit()
+        
+        return RedirectResponse(url="/blogs", status_code=status.HTTP_302_FOUND)
+    except SQLAlchemyError as e:
+        print("delete_blog Error: ", e)
+        conn.rollback() # yield 이후 rollback이 자동으로 되게 만들었긴 하나, 명시해주자.
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE
+                            , detail="The service you requested briefly encountered an internal problem."
+                            )
