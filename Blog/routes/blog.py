@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, Depends, Form, status
+from fastapi import APIRouter, Request, Depends, Form, UploadFile, File, status
 from fastapi.responses import RedirectResponse
 from fastapi.exceptions import HTTPException
 from fastapi.templating import Jinja2Templates
@@ -45,13 +45,19 @@ def create_blog_ui(req: Request):
         )
     
 @router.post("/new")
-def create_blog(req: Request,
-                title: str = Form(min_length=2, max_length=100),
-                author: str = Form(max_length=100),
-                content: str = Form(min_length=2, max_length=4000),
-                conn: Connection = Depends(context_get_conn)):
+def create_blog(req: Request
+                , title: str = Form(min_length=2, max_length=100)
+                , author: str = Form(max_length=100)
+                , content: str = Form(min_length=2, max_length=4000)
+                , imagefile: UploadFile | None = Form(None)
+                , conn: Connection = Depends(context_get_conn)):
     
-    blog_svc.create_blog(conn=conn, title=title, author=author, content=content)    
+    print(f"imagefile: {imagefile}")
+    print(f"imagefile.filename: {imagefile.filename}")
+    
+    blog_svc.upload_file(author=author, imagefile=imagefile)
+    
+    # blog_svc.create_blog(conn=conn, title=title, author=author, content=content)
     return RedirectResponse(url="/blogs", status_code=status.HTTP_302_FOUND)
     
 @router.get("/modify/{id}")
@@ -77,6 +83,7 @@ def update_blog(req: Request, id: int
     
 @router.post("/delete/{id}")
 def delete_blog(req: Request, id: int, conn: Connection = Depends(context_get_conn)):
+    
     blog_svc.delete_blog(conn=conn, id=id)
     
     # 자바스크립트에서 fetch 이후 직접 redirect 하고 있기에 아래 코드 실행하면 에러 발생

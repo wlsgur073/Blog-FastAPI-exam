@@ -1,12 +1,18 @@
-from fastapi import status
+from fastapi import status, UploadFile
 from fastapi.exceptions import HTTPException
 from sqlalchemy import text, Connection
 from sqlalchemy.exc import SQLAlchemyError
 from schemas.blog_schema import Blog, BlogOutputData
 from utils import util
 from typing import List
+from dotenv import load_dotenv
+import os
+import time
 
 # Depends는 endpoint를 호출할 수 있는, router가 있는 곳에서 불러올 수 있기에, service에서는 매개변수로 받는다.
+
+load_dotenv()
+UPLOAD_DIR = os.getenv("UPLOAD_DIR")
 
 def get_all_blogs(conn: Connection) -> List: # return list type을 명시
     try:
@@ -105,6 +111,21 @@ def update_blog(conn: Connection, id: int, title: str, author: str, content: str
         conn.rollback()
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST
                             , detail="The request you made was not valid. Please check the input values.")
+
+def upload_file(author: str, imagefile: UploadFile = None):
+    user_dir = f"{UPLOAD_DIR}/{author}/"
+    if not os.path.exists(user_dir):
+        os.makedirs(user_dir)
+        
+    filename_only, ext = os.path.splitext(imagefile.filename)
+    upload_filename = f"{filename_only}_{(int)(time.time() / 1000)}{ext}" # 중복 방지를 위해 시간을 sec 단위로 사용, ext는 .이 들어가 있음.
+    upload_image_loc = user_dir + upload_filename
+    
+    with open(upload_image_loc, "wb") as outfile: # `wb` = `binary write`
+        # while content := imagefile.file.read(1024): # 동기 방식
+        outfile.write(imagefile.file.read())
+        
+    print("Upload success: ", upload_image_loc)
     
 def delete_blog(conn: Connection, id: int):
     try:
