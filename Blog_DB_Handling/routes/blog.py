@@ -27,7 +27,7 @@ async def get_all_blogs(req: Request): # async 쓸 필요는 없지만, 훗날 a
                         , title = row.title
                         , author = row.author
                         , content = util.truncate_text(row.content)
-                        , image_loc = row.image_loc1 # db 값이 Null인 경우 파이썬에서 None으로 처리됨
+                        , image_loc = row.image_loc # db 값이 Null인 경우 파이썬에서 None으로 처리됨
                         , modified_dt = row.modified_dt)
                     for row in result]
         result.close()
