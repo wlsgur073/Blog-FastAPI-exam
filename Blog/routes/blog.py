@@ -79,4 +79,5 @@ def update_blog(req: Request, id: int
 def delete_blog(req: Request, id: int, conn: Connection = Depends(context_get_conn)):
     blog_svc.delete_blog(conn=conn, id=id)
     
-    return RedirectResponse(url="/blogs", status_code=status.HTTP_302_FOUND)
+    # 자바스크립트에서 fetch 이후 직접 redirect 하고 있기에 아래 코드 실행하면 에러 발생
+    # return RedirectResponse(url="/blogs", status_code=status.HTTP_302_FOUND)
