@@ -7,7 +7,9 @@
                 <div class="mb-4">
                     <h1 class="fw-bold">{{ blog.title }}</h1>
                     <p class="text-muted">Posted on {{ blog.modified_dt }} by {{ blog.author }}</p>
-                    <img src="{{ blog.image_loc }}" class="img-fluid w-100 mb-4" style="height: 500px;" alt="Blog Image">
+                    {% if blog.image_loc %}
+                        <img src="{{ blog.image_loc }}" class="img-fluid w-100 mb-4" style="height: 500px;" alt="Blog Image">
+                    {% endif %}
                     <p>{{ blog.content | safe }}</p>
                 </div>
 
