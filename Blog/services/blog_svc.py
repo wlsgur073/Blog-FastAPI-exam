@@ -118,7 +118,7 @@ def upload_file(author: str, imagefile: UploadFile = None):
         os.makedirs(user_dir)
         
     filename_only, ext = os.path.splitext(imagefile.filename)
-    upload_filename = f"{filename_only}_{(int)(time.time() / 1000)}{ext}" # 중복 방지를 위해 시간을 sec 단위로 사용, ext는 .이 들어가 있음.
+    upload_filename = f"{filename_only}_{(int)(time.time())}{ext}" # 중복 방지를 위해 시간 단위로 사용, ext는 .이 들어가 있음.
     upload_image_loc = user_dir + upload_filename
     
     with open(upload_image_loc, "wb") as outfile: # `wb` = `binary write`
