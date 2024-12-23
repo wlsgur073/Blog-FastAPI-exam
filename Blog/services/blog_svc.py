@@ -72,12 +72,14 @@ def get_blog_by_id(conn: Connection, id: int):
                             , detail="The service you requested briefly encountered an internal problem.")
     
 # 이미 Form 체크를 해주고 파라미터로 들어오는 애들임
-def create_blog(conn: Connection, title: str, author: str, content: str):
+def create_blog(conn: Connection, title: str, author: str
+                , content: str, image_loc = None): # image_loc은 None이 들어오면 DB에 'None'으로 insert됨.
     try:
         query = f"""
-                INSERT INTO blog (title, author, content, modified_dt)
-                VALUES ('{title}', '{author}', '{content}', NOW())
+                INSERT INTO blog (title, author, content, image_loc, modified_dt)
+                VALUES ('{title}', '{author}', '{content}', '{image_loc}', NOW())
                 """
+        
         conn.execute(text(query))
         conn.commit()
         
@@ -113,20 +115,27 @@ def update_blog(conn: Connection, id: int, title: str, author: str, content: str
                             , detail="The request you made was not valid. Please check the input values.")
 
 def upload_file(author: str, imagefile: UploadFile = None):
-    user_dir = f"{UPLOAD_DIR}/{author}/"
-    if not os.path.exists(user_dir):
-        os.makedirs(user_dir)
+    try:
+        user_dir = f"{UPLOAD_DIR}/{author}/"
+        if not os.path.exists(user_dir):
+            os.makedirs(user_dir)
+            
+        filename_only, ext = os.path.splitext(imagefile.filename)
+        upload_filename = f"{filename_only}_{(int)(time.time())}{ext}" # 중복 방지를 위해 시간 단위로 사용, ext는 .이 들어가 있음.
+        upload_image_loc = user_dir + upload_filename
         
-    filename_only, ext = os.path.splitext(imagefile.filename)
-    upload_filename = f"{filename_only}_{(int)(time.time())}{ext}" # 중복 방지를 위해 시간 단위로 사용, ext는 .이 들어가 있음.
-    upload_image_loc = user_dir + upload_filename
-    
-    with open(upload_image_loc, "wb") as outfile: # `wb` = `binary write`
-        # while content := imagefile.file.read(1024): # 아래 코드랑 동작 방식 같음.
-        outfile.write(imagefile.file.read(1024))
+        with open(upload_image_loc, "wb") as outfile: # `wb` = `binary write`
+            while content := imagefile.file.read(1024):
+                outfile.write(content)
+            
+        print("Upload succeeded: ", upload_image_loc)
         
-    print("Upload succeeded: ", upload_image_loc)
-    
+        return upload_image_loc[1:] # /static/ 이후의 경로만 반환
+    except Exception as e:
+        print("upload_file Error: ", e)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+                            , detail="Image upload failed.")
+        
 def delete_blog(conn: Connection, id: int):
     try:
         # oltp에서는 대부분 bdinvariables를 사용한다.

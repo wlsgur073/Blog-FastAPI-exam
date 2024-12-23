@@ -55,9 +55,10 @@ def create_blog(req: Request
     print(f"imagefile: {imagefile}")
     print(f"imagefile.filename: {imagefile.filename}")
     
-    blog_svc.upload_file(author=author, imagefile=imagefile)
+    # `upload_file()` 함수와 `create_blog()` 함수를 호출 순서 주의
+    image_loc = blog_svc.upload_file(author=author, imagefile=imagefile)
+    blog_svc.create_blog(conn=conn, title=title, author=author, content=content, image_loc=image_loc)
     
-    # blog_svc.create_blog(conn=conn, title=title, author=author, content=content)
     return RedirectResponse(url="/blogs", status_code=status.HTTP_302_FOUND)
     
 @router.get("/modify/{id}")
