@@ -55,9 +55,14 @@ def create_blog(req: Request
     print(f"imagefile: {imagefile}")
     print(f"imagefile.filename: {imagefile.filename}")
     
-    # `upload_file()` 함수와 `create_blog()` 함수를 호출 순서 주의
-    image_loc = blog_svc.upload_file(author=author, imagefile=imagefile)
-    blog_svc.create_blog(conn=conn, title=title, author=author, content=content, image_loc=image_loc)
+    image_loc = None
+    # if imagefile is None: # UploadFile이 None이 아니어서 적절하지 못함.
+    # if imagefile.filename is None: # 이것도 적절치 못함.
+    if len(imagefile.filename.strip()) > 0: # filename의 길이가 0이면 이미지 파일이 없다는 것으로 체크
+        image_loc = blog_svc.upload_file(author=author, imagefile=imagefile)
+        blog_svc.create_blog(conn=conn, title=title, author=author, content=content, image_loc=image_loc)
+    else:
+        blog_svc.create_blog(conn=conn, title=title, author=author, content=content, image_loc=image_loc)
     
     return RedirectResponse(url="/blogs", status_code=status.HTTP_302_FOUND)
     

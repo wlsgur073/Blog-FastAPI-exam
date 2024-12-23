@@ -17,8 +17,16 @@ UPLOAD_DIR = os.getenv("UPLOAD_DIR")
 def get_all_blogs(conn: Connection) -> List: # return list type을 명시
     try:
         query = """
-            SELECT id, title, author, content, image_loc, modified_dt FROM blog
+            SELECT id, title, author, content,
+            case when image_loc is null then '/static/default/blog_default.png'
+                else image_loc end as image_loc
+            , modified_dt FROM blog
                 """
+        
+        # 쿼리 아래처럼 쓸려면 fetachall()도 아래 주석처럼 써야 함.
+        # query = """
+        #     SELECT id, title, author, content,image_loc, modified_dt FROM blog
+        #         """
         result = conn.execute(text(query))
         
         all_blogs = [BlogOutputData(id = row.id
@@ -28,6 +36,20 @@ def get_all_blogs(conn: Connection) -> List: # return list type을 명시
                         , image_loc = row.image_loc
                         , modified_dt = row.modified_dt)
                     for row in result]
+        
+        # rows = result.fetchall()
+        # all_blogs = []
+        # for row in rows:
+        #     blog = BlogOutputData(id = row.id
+        #                 , title = row.title
+        #                 , author = row.author
+        #                 , content = util.truncate_text(row.content)
+        #                 , image_loc = row.image_loc
+        #                 , modified_dt = row.modified_dt)
+        #     if blog.image_loc is None:
+        #         blog.image_loc = "/static/default/blog_default.png"
+        #     all_blogs.append(blog)
+            
         result.close()
         return all_blogs
     except SQLAlchemyError as e:
@@ -41,10 +63,14 @@ def get_all_blogs(conn: Connection) -> List: # return list type을 명시
 
 def get_blog_by_id(conn: Connection, id: int):
     try:
-        query = f"""
-                SELECT id, title, author, content, image_loc, modified_dt FROM blog
-                WHERE id = :id
+        query = """
+            SELECT id, title, author, content,
+            case when image_loc is null then '/static/default/blog_default.png'
+                else image_loc end as image_loc
+            , modified_dt FROM blog
+            WHERE id = :id
                 """
+                
         stmt = text(query)
         bind_stmt = stmt.bindparams(id=id)
         result = conn.execute(bind_stmt)
@@ -77,7 +103,7 @@ def create_blog(conn: Connection, title: str, author: str
     try:
         query = f"""
                 INSERT INTO blog (title, author, content, image_loc, modified_dt)
-                VALUES ('{title}', '{author}', '{content}', '{image_loc}', NOW())
+                VALUES ('{title}', '{author}', '{content}', {util.none_to_null(image_loc, is_sqote=True)}, NOW())
                 """
         
         conn.execute(text(query))
@@ -119,9 +145,9 @@ def upload_file(author: str, imagefile: UploadFile = None):
         user_dir = f"{UPLOAD_DIR}/{author}/"
         if not os.path.exists(user_dir):
             os.makedirs(user_dir)
-            
+        
         filename_only, ext = os.path.splitext(imagefile.filename)
-        upload_filename = f"{filename_only}_{(int)(time.time())}{ext}" # 중복 방지를 위해 시간 단위로 사용, ext는 .이 들어가 있음.
+        upload_filename = f"{filename_only}_{(int)(time.time())}{ext}"
         upload_image_loc = user_dir + upload_filename
         
         with open(upload_image_loc, "wb") as outfile: # `wb` = `binary write`
