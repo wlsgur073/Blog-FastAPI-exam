@@ -122,10 +122,10 @@ def upload_file(author: str, imagefile: UploadFile = None):
     upload_image_loc = user_dir + upload_filename
     
     with open(upload_image_loc, "wb") as outfile: # `wb` = `binary write`
-        # while content := imagefile.file.read(1024): # 동기 방식
-        outfile.write(imagefile.file.read())
+        # while content := imagefile.file.read(1024): # 아래 코드랑 동작 방식 같음.
+        outfile.write(imagefile.file.read(1024))
         
-    print("Upload success: ", upload_image_loc)
+    print("Upload succeeded: ", upload_image_loc)
     
 def delete_blog(conn: Connection, id: int):
     try:
