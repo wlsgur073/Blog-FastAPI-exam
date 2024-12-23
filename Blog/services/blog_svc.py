@@ -64,10 +64,7 @@ def get_all_blogs(conn: Connection) -> List: # return list type을 명시
 def get_blog_by_id(conn: Connection, id: int):
     try:
         query = """
-            SELECT id, title, author, content,
-            case when image_loc is null then '/static/default/blog_default.png'
-                else image_loc end as image_loc
-            , modified_dt FROM blog
+            SELECT id, title, author, content, image_loc, modified_dt FROM blog
             WHERE id = :id
                 """
                 
@@ -86,6 +83,7 @@ def get_blog_by_id(conn: Connection, id: int):
                         , content = row.content
                         , image_loc = row.image_loc
                         , modified_dt = row.modified_dt)
+            
         result.close()
         return blog
     except SQLAlchemyError as e:
@@ -116,15 +114,18 @@ def create_blog(conn: Connection, title: str, author: str
                             , detail="The request you made was not valid. Please check the input values.")
 
     
-def update_blog(conn: Connection, id: int, title: str, author: str, content: str):
+def update_blog(conn: Connection, id: int, title: str, author: str, content: str, image_loc: str = None):
     try:
         query = f"""
                 UPDATE blog
-                SET title = '{title}', author = '{author}', content = '{content}', modified_dt = NOW()
+                SET title = '{title}', author = '{author}', content = '{content}'
+                , image_loc = :image_loc
+                , modified_dt = NOW()
                 WHERE id = :id
                 """
         stmt = text(query)
-        bind_stmt = stmt.bindparams(id = id)
+        # python에서 bindvrariables를 사용할때는 None이 들어가면 Null로 번역해줌.
+        bind_stmt = stmt.bindparams(id = id, image_loc = image_loc)
         result = conn.execute(bind_stmt)
         
         # app의 www url encoded로 오면 쿼리 파라미터에 값을 오입력할수도 있음. 그래서 예외처리함.
@@ -162,7 +163,7 @@ def upload_file(author: str, imagefile: UploadFile = None):
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
                             , detail="Image upload failed.")
         
-def delete_blog(conn: Connection, id: int):
+def delete_blog(conn: Connection, id: int, image_loc: str = None):
     try:
         # oltp에서는 대부분 bdinvariables를 사용한다.
         query = f"""
@@ -177,8 +178,17 @@ def delete_blog(conn: Connection, id: int):
         
         conn.commit()
         
+        if image_loc is not None:
+            image_path = "." + image_loc # 경로가 '/static/~~'로 되어 있어서 상대
+            if os.path.exists(image_path):
+                os.remove(image_path)
+        
     except SQLAlchemyError as e:
         print("delete_blog Error: ", e)
         conn.rollback() # yield 이후 rollback이 자동으로 되게 만들었긴 하나, 명시해주자.
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE
                             , detail="The service you requested briefly encountered an internal problem.")
+    except Exception as e:
+        print("delete_blog Error: ", e)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+                            , detail="An unknown service error occurred. Contact the administrator.")
