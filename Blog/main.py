@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 
 from routes import blog
 from utils.common import lifespan
@@ -13,7 +14,13 @@ app = FastAPI(lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # add_middleware는 stack마냥 후차순으로 실행된다.
-app.add_middleware(middleware.DummyMiddleware)
+app.add_middleware(CORSMiddleware
+                   , allow_origins=["*"]
+                   , allow_methods=["*"]
+                   , allow_headers=["*"]
+                   , allow_credentials=True # 쿠키 ok
+                   , max_age=-1) # -1은 무제한
+# app.add_middleware(middleware.DummyMiddleware)
 app.add_middleware(middleware.MethodOverrideMiddleware)
 
 app.include_router(blog.router)
