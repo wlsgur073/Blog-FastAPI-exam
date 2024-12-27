@@ -49,22 +49,8 @@ This project contains a blog application built using FastAPI, SQLAlchemy, and Ji
 
    Replace `app.main` with the actual path to your FastAPI application if different.
 
-6. Access the application at [http://127.0.0.1:8000](http://127.0.0.1:8000).
+6. Access the application
 
-## Project Structure
-
-```
-<project-root>/
-├── app/
-│   ├── main.py          # Entry point of the application
-│   ├── models.py        # SQLAlchemy models
-│   ├── schemas.py       # Pydantic schemas
-│   ├── routes/          # FastAPI route definitions
-│   ├── templates/       # Jinja2 HTML templates
-│   └── static/          # Static files (CSS, JavaScript, images)
-├── tests/               # Unit and integration tests
-└── README.md            # Project documentation
-```
 
 ## Dependencies
 
