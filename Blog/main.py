@@ -1,6 +1,7 @@
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.exceptions import RequestValidationError
 from contextlib import asynccontextmanager
 from routes import blog
 from db.database import engine
@@ -32,7 +33,21 @@ async def custom_http_exception_hander(req: Request, exc: HTTPException):
         , name="http_error.html"
         , context={
             "status_code": exc.status_code
-            , "title_message": "Error occurred"
+            , "title_message": "Error occurred."
             , "detail": exc.detail
         }
+        , status_code=exc.status_code
+    )
+    
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(req: Request, exc: RequestValidationError):
+    return templates.TemplateResponse(
+        request=req
+        , name="validation_error.html"
+        , context={
+            "status_code": status.HTTP_422_UNPROCESSABLE_ENTITY
+            , "title_message": "Invalid value entered."
+            , "detail": exc.errors()
+        }
+        , status_code=status.HTTP_422_UNPROCESSABLE_ENTITY
     )
