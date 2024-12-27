@@ -1,7 +1,6 @@
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-from routes import blog
+from fastapi.templating import Jinja2Templates
 from contextlib import asynccontextmanager
 from db.database import engine
 
@@ -21,16 +20,20 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+from routes import blog # templates 설정에 재귀가 발생할 수 있으므로 import 순서 변경
 app.include_router(blog.router)
 
 @app.exception_handler(HTTPException)
 async def custom_http_exception_hander(req: Request, exc: HTTPException):
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={
-            "error": "Error occurred",
-            "message": exc.detail,
-            "code": exc.status_code
+    return templates.TemplateResponse(
+        request=req
+        , name="http_error.html"
+        , context={
+            "status_code": exc.status_code
+            , "title_message": "Error occurred"
+            , "detail": exc.detail
         }
     )

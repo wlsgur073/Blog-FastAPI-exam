@@ -24,10 +24,6 @@ async def get_all_blogs(conn: Connection) -> List: # return list type을 명시
             , modified_dt FROM blog
                 """
         
-        # 쿼리 아래처럼 쓸려면 fetachall()도 아래 주석처럼 써야 함.
-        # query = """
-        #     SELECT id, title, author, content,image_loc, modified_dt FROM blog
-        #         """
         result = await conn.execute(text(query))
         
         all_blogs = [BlogOutputData(id = row.id
@@ -38,19 +34,6 @@ async def get_all_blogs(conn: Connection) -> List: # return list type을 명시
                         , modified_dt = row.modified_dt)
                     for row in result]
         
-        # rows = result.fetchall()
-        # all_blogs = []
-        # for row in rows:
-        #     blog = BlogOutputData(id = row.id
-        #                 , title = row.title
-        #                 , author = row.author
-        #                 , content = util.truncate_text(row.content)
-        #                 , image_loc = row.image_loc
-        #                 , modified_dt = row.modified_dt)
-        #     if blog.image_loc is None:
-        #         blog.image_loc = "/static/default/blog_default.png"
-        #     all_blogs.append(blog)
-            
         result.close()
         return all_blogs
     except SQLAlchemyError as e:
