@@ -8,11 +8,12 @@ from sqlalchemy.exc import SQLAlchemyError
 from schemas.blog_schema import Blog, BlogOutputData
 from services import blog_svc
 from utils import util
+from main import templates # 매번 templates를 router마다 설정해주기 귀찮으니까 main.py에서 가져옴
 
 #router object
 router = APIRouter(prefix="/blogs", tags=["blogs"])
 #create jinjia2 template engine
-templates = Jinja2Templates(directory="templates")
+# templates = Jinja2Templates(directory="templates")
 
 @router.get("/")
 async def get_all_blogs(req: Request, conn: Connection = Depends(context_get_conn)):
