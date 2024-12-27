@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from contextlib import asynccontextmanager
+from routers import blog
 from db.database import engine
 
 @asynccontextmanager
@@ -22,8 +23,6 @@ app = FastAPI(lifespan=lifespan)
 
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
-
-from routes import blog # templates 설정에 재귀가 발생할 수 있으므로 import 순서 변경
 app.include_router(blog.router)
 
 @app.exception_handler(HTTPException)
