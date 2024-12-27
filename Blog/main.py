@@ -1,4 +1,5 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from routes import blog
 from contextlib import asynccontextmanager
@@ -22,3 +23,14 @@ app = FastAPI(lifespan=lifespan)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.include_router(blog.router)
+
+@app.exception_handler(HTTPException)
+async def custom_http_exception_hander(req: Request, exc: HTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "error": "Error occurred",
+            "message": exc.detail,
+            "code": exc.status_code
+        }
+    )
