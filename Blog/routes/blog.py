@@ -1,11 +1,9 @@
-from fastapi import APIRouter, Request, Depends, Form, UploadFile, File, status
+from fastapi import APIRouter, Request, Depends, Form, UploadFile, status
 from fastapi.responses import RedirectResponse, JSONResponse
-from fastapi.exceptions import HTTPException
 from fastapi.templating import Jinja2Templates
-from db.database import direct_get_conn, context_get_conn
-from sqlalchemy import text, Connection
-from sqlalchemy.exc import SQLAlchemyError
-from schemas.blog_schema import Blog, BlogOutputData
+from db.database import context_get_conn
+from sqlalchemy import Connection
+
 from services import blog_svc
 from utils import util
 
@@ -88,7 +86,7 @@ async def update_blog(req: Request, id: int
    
     return RedirectResponse(url=f"/blogs/show/{id}", status_code=status.HTTP_302_FOUND)
     
-@router.post("/delete/{id}")
+@router.delete("/delete/{id}")
 async def delete_blog(req: Request, id: int, conn: Connection = Depends(context_get_conn)):
     
     blog = await blog_svc.get_blog_by_id(conn, id = id) # blog.image_loc를 가져오기 위함

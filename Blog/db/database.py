@@ -1,8 +1,5 @@
-from sqlalchemy import create_engine, Connection
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine
+from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.pool import QueuePool, NullPool
-from contextlib import contextmanager
 from fastapi import status
 from fastapi.exceptions import HTTPException
 from dotenv import load_dotenv

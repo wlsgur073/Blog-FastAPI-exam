@@ -2,7 +2,7 @@ from fastapi import status, UploadFile
 from fastapi.exceptions import HTTPException
 from sqlalchemy import text, Connection
 from sqlalchemy.exc import SQLAlchemyError
-from schemas.blog_schema import Blog, BlogOutputData
+from schemas.blog_schema import BlogOutputData
 from utils import util
 from typing import List
 from dotenv import load_dotenv
