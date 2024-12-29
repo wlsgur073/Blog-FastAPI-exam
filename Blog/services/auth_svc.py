@@ -90,5 +90,12 @@ def get_session_user_opt(req: Request): # Optional
 def get_session_user_prt(req: Request): # protected
     if "session_user" not in req.session.keys():
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="You need to login.")
-    
     return req.session["session_user"]
+
+def check_valid_auth(session_user: dict, blog_author_id: int, blog_author_email: str):
+    # 애초에 get_session_user_prt를 먼저 쓰는 곳은 None일 수 없으나, 다른 곳에서도 해당 함수를 쓸지도 모르니
+    if session_user is None:
+        return False
+    if (session_user["id"] == blog_author_id) and (session_user["email"] == blog_author_email):
+        return True
+    return False

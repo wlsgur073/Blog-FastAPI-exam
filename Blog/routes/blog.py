@@ -34,11 +34,16 @@ async def get_blog_by_id(req: Request, id: int
     blog = await blog_svc.get_blog_by_id(conn, id)
     blog.content = util.newline_to_br(blog.content) # get_blog_by_id 함수가 수정에서도 재활용되기에 이렇게 변경.
     
+    is_valid_auth = auth_svc.check_valid_auth(session_user
+                                              , blog_author_id=blog.author_id
+                                              , blog_author_email=blog.email)
+    
     return templates.TemplateResponse(
         request = req
         , name = "show_blog.html"
         , context = {"blog": blog
-                   , "session_user": session_user}
+                   , "session_user": session_user
+                   , "is_valid_auth": is_valid_auth}
     )
 
 @router.get("/new")
@@ -72,7 +77,14 @@ async def create_blog(req: Request
 async def update_blog_ui(req: Request, id: int
                          , conn = Depends(context_get_conn)
                          , session_user = Depends(auth_svc.get_session_user_prt)):
+    
     blog = await blog_svc.get_blog_by_id(conn, id = id)
+    is_valid_auth = auth_svc.check_valid_auth(session_user
+                                              , blog_author_id=blog.author_id
+                                              , blog_author_email=blog.email)
+    
+    if not is_valid_auth:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="You are not authorized to modify this blog.")
    
     return templates.TemplateResponse(
         request = req
@@ -88,6 +100,15 @@ async def update_blog(req: Request, id: int
                 , imagefile: UploadFile | None = Form(None)
                 , conn: Connection = Depends(context_get_conn)
                 , session_user = Depends(auth_svc.get_session_user_prt)):
+    
+    # update를 할때마다 session과 DB의 id가 일치한지 확인해야 한다.
+    blog = await blog_svc.get_blog_by_id(conn, id = id)
+    is_valid_auth = auth_svc.check_valid_auth(session_user
+                                              , blog_author_id=blog.author_id
+                                              , blog_author_email=blog.email)
+    
+    if not is_valid_auth:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="You are not authorized to modify this blog.")
     
     image_loc = None
     author = session_user["name"]
@@ -105,6 +126,12 @@ async def delete_blog(req: Request, id: int
                       , session_user = Depends(auth_svc.get_session_user_prt)):
     
     blog = await blog_svc.get_blog_by_id(conn, id = id) # blog.image_loc를 가져오기 위함
+    is_valid_auth = auth_svc.check_valid_auth(session_user
+                                              , blog_author_id=blog.author_id
+                                              , blog_author_email=blog.email)
+    
+    if not is_valid_auth:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="You are not authorized to delete this blog.")
     # 만약 get_blog_by_id() 함수에서 업로드한 이미지가 없으면 defualt 이미지를 리턴하게 설정하고 삭제를 시도하면 default로 설정한 이미지가 지워진다.
     # 그런데 클라이언트 캐시에 캐시된 이미지가 있어서 일시적으로 삭제된 이미지가 출력된다 ㅋㅋ. 주의하자.
     
