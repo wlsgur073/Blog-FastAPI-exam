@@ -31,7 +31,7 @@ This project contains a blog application built using FastAPI, SQLAlchemy, and Ji
    ```
 
 3. Install the required dependencies:
-   check `requirements.txt`
+   check [`requirements.txt`](https://github.com/wlsgur073/Blog_FastAPI/blob/main/Blog/requirements.txt)
 
 4. Set up the database:
 
