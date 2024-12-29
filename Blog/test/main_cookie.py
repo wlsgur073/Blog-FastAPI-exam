@@ -17,8 +17,8 @@ users_db = {
 }
 
 # Request 객체에서 cookie 정보 추출 
-def get_logged_user(request: Request):
-    cookies = request.cookies
+def get_logged_user(req: Request):
+    cookies = req.cookies
     print("cookies:", cookies)
     if "my_cookie" in cookies.keys():
         my_cookie_value = cookies["my_cookie"]
@@ -29,7 +29,7 @@ def get_logged_user(request: Request):
     return None
 
 # Cookie 클래스를 이용하여 cookie 정보 추출
-def get_logged_user_by_cookie_di(my_cookie=Cookie(None)):
+def get_logged_user_by_cookie_di(my_cookie=Cookie(None)): # cookie의 key값을 인자로 받음.
     if not my_cookie:
         return None
     
