@@ -24,6 +24,7 @@ async def get_all_blogs(conn: Connection) -> List: # return list type을 명시
             , modified_dt
             FROM blog a
                 join user b on a.author_id = b.id
+            ORDER BY a.modified_dt DESC
                 """
         
         result = await conn.execute(text(query))
@@ -88,12 +89,12 @@ async def get_blog_by_id(conn: Connection, id: int):
                             , detail="The service you requested briefly encountered an internal problem.")
     
 # 이미 Form 체크를 해주고 파라미터로 들어오는 애들임
-async def create_blog(conn: Connection, title: str, author: str
+async def create_blog(conn: Connection, title: str, author_id: int
                 , content: str, image_loc = None): # image_loc은 None이 들어오면 DB에 'None'으로 insert됨.
     try:
         query = f"""
-                INSERT INTO blog (title, author, content, image_loc, modified_dt)
-                VALUES ('{title}', '{author}', '{content}', {util.none_to_null(image_loc, is_sqote=True)}, NOW())
+                INSERT INTO blog (title, author_id, content, image_loc, modified_dt)
+                VALUES ('{title}', {author_id}, '{content}', {util.none_to_null(image_loc, is_sqote=True)}, NOW())
                 """
         
         await conn.execute(text(query))
@@ -106,11 +107,11 @@ async def create_blog(conn: Connection, title: str, author: str
                             , detail="The request you made was not valid. Please check the input values.")
 
     
-async def update_blog(conn: Connection, id: int, title: str, author: str, content: str, image_loc: str = None):
+async def update_blog(conn: Connection, id: int, title: str, content: str, image_loc: str = None):
     try:
         query = f"""
                 UPDATE blog
-                SET title = '{title}', author = '{author}', content = '{content}'
+                SET title = '{title}', content = '{content}'
                 , image_loc = :image_loc
                 , modified_dt = NOW()
                 WHERE id = :id

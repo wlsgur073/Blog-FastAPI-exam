@@ -52,18 +52,19 @@ async def create_blog_ui(req: Request, session_user = Depends(auth_svc.get_sessi
 @router.post("/new")
 async def create_blog(req: Request
                 , title: str = Form(min_length=2, max_length=100)
-                , author: str = Form(max_length=100)
                 , content: str = Form(min_length=2, max_length=4000)
                 , imagefile: UploadFile | None = Form(None)
                 , conn: Connection = Depends(context_get_conn)
                 , session_user = Depends(auth_svc.get_session_user_prt)):
     
     image_loc = None
+    author = session_user["name"]
+    author_id = session_user["id"]
     if len(imagefile.filename.strip()) > 0: # filename의 길이가 0이면 이미지 파일이 없다는 것으로 체크
         image_loc = await blog_svc.upload_file(author=author, imagefile=imagefile)
-        await blog_svc.create_blog(conn=conn, title=title, author=author, content=content, image_loc=image_loc)
+        await blog_svc.create_blog(conn=conn, title=title, author_id=author_id, content=content, image_loc=image_loc)
     else:
-        await blog_svc.create_blog(conn=conn, title=title, author=author, content=content, image_loc=image_loc)
+        await blog_svc.create_blog(conn=conn, title=title, author_id=author_id, content=content, image_loc=image_loc)
     
     return RedirectResponse(url="/blogs", status_code=status.HTTP_302_FOUND)
     
@@ -80,21 +81,21 @@ async def update_blog_ui(req: Request, id: int
                    , "session_user": session_user}
     )
    
-@router.post("/modify/{id}")
+@router.put("/modify/{id}")
 async def update_blog(req: Request, id: int
                 , title: str = Form(min_length=2, max_length=100)
-                , author: str = Form(max_length=100)
                 , content: str = Form(min_length=2, max_length=4000)
                 , imagefile: UploadFile | None = Form(None)
                 , conn: Connection = Depends(context_get_conn)
                 , session_user = Depends(auth_svc.get_session_user_prt)):
     
     image_loc = None
+    author = session_user["name"]
     if len(imagefile.filename.strip()) > 0: # filename의 길이가 0이면 이미지 파일이 없다는 것으로 체크
         image_loc = await blog_svc.upload_file(author=author, imagefile=imagefile)
-        await blog_svc.update_blog(conn=conn, id=id, title=title, author=author, content=content, image_loc=image_loc)
+        await blog_svc.update_blog(conn=conn, id=id, title=title, content=content, image_loc=image_loc)
     else:
-        await blog_svc.update_blog(conn=conn, id=id, title=title, author=author, content=content, image_loc=image_loc)
+        await blog_svc.update_blog(conn=conn, id=id, title=title, content=content, image_loc=image_loc)
    
     return RedirectResponse(url=f"/blogs/show/{id}", status_code=status.HTTP_302_FOUND)
     
