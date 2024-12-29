@@ -3,6 +3,9 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
+from dotenv import load_dotenv
+import os
 
 from routes import blog, auth
 from utils.common import lifespan
@@ -20,7 +23,12 @@ app.add_middleware(CORSMiddleware
                    , allow_headers=["*"]
                    , allow_credentials=True # 쿠키 ok
                    , max_age=-1) # -1은 무제한
-# app.add_middleware(middleware.DummyMiddleware)
+
+load_dotenv()
+SECRET_KEY = os.getenv("SECRET_KEY")
+# signed cookie를 사용하기 위한 secret key 설정
+app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY, max_age=3600)
+
 app.add_middleware(middleware.MethodOverrideMiddleware)
 
 app.include_router(blog.router)
