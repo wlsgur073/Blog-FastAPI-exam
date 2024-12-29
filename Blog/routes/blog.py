@@ -4,7 +4,7 @@ from fastapi.templating import Jinja2Templates
 from db.database import context_get_conn
 from sqlalchemy import Connection
 
-from services import blog_svc
+from services import blog_svc, auth_svc
 from utils import util
 
 #router object
@@ -13,13 +13,16 @@ router = APIRouter(prefix="/blogs", tags=["blogs"])
 templates = Jinja2Templates(directory="templates")
 
 @router.get("/")
-async def get_all_blogs(req: Request, conn: Connection = Depends(context_get_conn)):
+async def get_all_blogs(req: Request
+                        , conn: Connection = Depends(context_get_conn)
+                        , session_user = Depends(auth_svc.get_session_user)):
     all_blogs = await blog_svc.get_all_blogs(conn)
     
     return templates.TemplateResponse(
         request = req,
         name = "index.html",
-        context = {"all_blogs": all_blogs}
+        context = {"all_blogs": all_blogs
+                   , "session_user": session_user}
     )
    
 

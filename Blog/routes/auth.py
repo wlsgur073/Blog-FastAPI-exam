@@ -56,7 +56,8 @@ async def login_ui(req: Request):
     
     
 @router.post("/login")
-async def login(email:EmailStr = Form(...)
+async def login(req:Request
+                , email:EmailStr = Form(...)
                 , password:str = Form(min_length=2, max_length=30)
                 , conn:Connection = Depends(context_get_conn)):
     # 이메일로 사용자 정보 조회
@@ -69,4 +70,11 @@ async def login(email:EmailStr = Form(...)
     if not is_correct_pw:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="The password is incorrect.")
     
+    req.session["session_user"] = {"id": userpass.id, "name": userpass.name, "email": userpass.email} # 알아서 cookie에 set됨.
+    
+    return RedirectResponse("/blogs", status_code=status.HTTP_302_FOUND)
+
+@router.get("/logout")
+async def logout(req:Request):
+    req.session.clear()
     return RedirectResponse("/blogs", status_code=status.HTTP_302_FOUND)

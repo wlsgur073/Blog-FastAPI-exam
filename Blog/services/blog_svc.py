@@ -18,17 +18,21 @@ UPLOAD_DIR = os.getenv("UPLOAD_DIR")
 async def get_all_blogs(conn: Connection) -> List: # return list type을 명시
     try:
         query = """
-            SELECT id, title, author, content,
+            SELECT a.id, a.title, a.author_id, b.name as author, b.email, a.content,
             case when image_loc is null then '/static/default/blog_default.png'
                 else image_loc end as image_loc
-            , modified_dt FROM blog
+            , modified_dt
+            FROM blog a
+                join user b on a.author_id = b.id
                 """
         
         result = await conn.execute(text(query))
         
         all_blogs = [BlogOutputData(id = row.id
                         , title = row.title
+                        , author_id = row.author_id
                         , author = row.author
+                        , email = row.email
                         , content = util.truncate_text(row.content)
                         , image_loc = row.image_loc
                         , modified_dt = row.modified_dt)
@@ -48,8 +52,10 @@ async def get_all_blogs(conn: Connection) -> List: # return list type을 명시
 async def get_blog_by_id(conn: Connection, id: int):
     try:
         query = """
-            SELECT id, title, author, content, image_loc, modified_dt FROM blog
-            WHERE id = :id
+            SELECT a.id, a.title, a.author_id, b.name as author, b.email, a.content, a.image_loc, a.modified_dt
+            FROM blog a
+                join user b on a.author_id = b.id
+            WHERE a.id = :id
                 """
                 
         stmt = text(query)
@@ -63,7 +69,9 @@ async def get_blog_by_id(conn: Connection, id: int):
         row = result.fetchone()
         blog = BlogOutputData(id = row.id
                         , title = row.title
+                        , author_id = row.author_id
                         , author = row.author
+                        , email = row.email
                         , content = row.content
                         , image_loc = row.image_loc
                         , modified_dt = row.modified_dt)

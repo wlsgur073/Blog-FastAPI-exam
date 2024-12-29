@@ -1,4 +1,4 @@
-from fastapi import status
+from fastapi import Request, status
 from fastapi.exceptions import HTTPException
 from sqlalchemy import text, Connection
 from sqlalchemy.exc import SQLAlchemyError
@@ -80,10 +80,9 @@ async def register_user(conn: Connection, name: str, email: str, hashed_password
         await conn.rollback()
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="The request you made was not valid. Please check the input values.")
         
-    class UserRegistrationException(Exception):
-        def __init__(self, message: str):
-            self.message = message
-            super().__init__(self.message)
-        
-        def __str__(self):
-            return f'UserRegistrationException: {self.message}'
+def get_session(req: Request):
+    return req.session
+
+def get_session_user(req: Request):
+    if "session_user" in req.session.keys():
+        return req.session["session_user"]
