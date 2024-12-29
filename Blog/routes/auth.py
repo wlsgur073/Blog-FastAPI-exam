@@ -19,6 +19,9 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto") # 사용할 �
 def get_hashed_password(password: str): # 평문 패스워드를 해시화하는 함수
     return pwd_context.hash(password)
 
+def verify_password(plain_password: str, hashed_password: str): # 패스워드 검증 함수
+    return pwd_context.verify(plain_password, hashed_password)
+
 @router.get("/register")
 async def registter_user_ui(req: Request):
     return templates.TemplateResponse(
@@ -50,3 +53,20 @@ async def login_ui(req: Request):
         , name = "login.html"
         , context = {}
     )
+    
+    
+@router.post("/login")
+async def login(email:EmailStr = Form(...)
+                , password:str = Form(min_length=2, max_length=30)
+                , conn:Connection = Depends(context_get_conn)):
+    # 이메일로 사용자 정보 조회
+    userpass = await auth_svc.get_userpass_by_email(conn=conn, email=email)
+    if userpass is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="The email is not registered.")
+    
+    is_correct_pw = verify_password(plain_password=password, hashed_password=userpass.hashed_password) # boolean
+    
+    if not is_correct_pw:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="The password is incorrect.")
+    
+    return RedirectResponse("/blogs", status_code=status.HTTP_302_FOUND)
