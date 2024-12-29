@@ -42,6 +42,7 @@ This project contains a blog application built using FastAPI, SQLAlchemy, and Ji
 5. Run the application:
 
    ```bash
+   cd /Blog
    uvicorn app.main:app --reload
    ```
 
