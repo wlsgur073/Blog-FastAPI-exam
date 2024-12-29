@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 
-from routes import blog
+from routes import blog, auth
 from utils.common import lifespan
 from utils import exc_handler, middleware
 
@@ -24,6 +24,7 @@ app.add_middleware(CORSMiddleware
 app.add_middleware(middleware.MethodOverrideMiddleware)
 
 app.include_router(blog.router)
+app.include_router(auth.router)
 
 # exception handler 등록
 app.add_exception_handler(StarletteHTTPException, exc_handler.custom_http_exception_hander)
