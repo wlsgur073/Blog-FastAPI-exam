@@ -18,11 +18,14 @@ class Blog(BlogInput):
     id: int
     modified_dt: datetime
 
-@dataclass # Pydantic에서 제공하는 dataclass 데코레이터를 사용하면 검증없이 데이터 던질 수 있음. 대신 반드시 데이터를 select해와야 함.
-class BlogOutputData:
+# dataclass보다 BaseModel을 사용하면 유연성이 높음.
+# 꼭 DB랑 맞출 필요는 없다고 한다.
+class BlogOutputData(BaseModel):
     id: int
     title: str
-    author: str
+    author_id: int
+    author: Optional[str] # pydantic은 dataclass처럼 None 값이 맨 마지막으로 하지 않아도 됨.
+    email: Optional[str]
     content: str
     modified_dt: datetime
-    image_loc: Optional[str] # dataclass를 쓸때는 None 값이 맨 마지막에 와야 함.
+    image_loc: Optional[str]
