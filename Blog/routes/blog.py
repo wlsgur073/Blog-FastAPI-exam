@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Request, Depends, Form, UploadFile, status
 from fastapi.responses import RedirectResponse, JSONResponse
+from fastapi.exceptions import HTTPException
 from fastapi.templating import Jinja2Templates
 from db.database import context_get_conn
 from sqlalchemy import Connection
@@ -15,35 +16,38 @@ templates = Jinja2Templates(directory="templates")
 @router.get("/")
 async def get_all_blogs(req: Request
                         , conn: Connection = Depends(context_get_conn)
-                        , session_user = Depends(auth_svc.get_session_user)):
+                        , session_user = Depends(auth_svc.get_session_user_opt)):
     all_blogs = await blog_svc.get_all_blogs(conn)
     
     return templates.TemplateResponse(
-        request = req,
-        name = "index.html",
-        context = {"all_blogs": all_blogs
+        request = req
+        , name = "index.html"
+        , context = {"all_blogs": all_blogs
                    , "session_user": session_user}
     )
    
 
 @router.get("/show/{id}")
-async def get_blog_by_id(req: Request, id: int, conn: Connection = Depends(context_get_conn)):
+async def get_blog_by_id(req: Request, id: int
+                         , conn: Connection = Depends(context_get_conn)
+                         , session_user = Depends(auth_svc.get_session_user_opt)):
     blog = await blog_svc.get_blog_by_id(conn, id)
     blog.content = util.newline_to_br(blog.content) # get_blog_by_id 함수가 수정에서도 재활용되기에 이렇게 변경.
     
     return templates.TemplateResponse(
-        request = req,
-        name = "show_blog.html",
-        context = {"blog": blog}
+        request = req
+        , name = "show_blog.html"
+        , context = {"blog": blog
+                   , "session_user": session_user}
     )
 
 @router.get("/new")
-async def create_blog_ui(req: Request):
+async def create_blog_ui(req: Request, session_user = Depends(auth_svc.get_session_user_prt)):
     return templates.TemplateResponse(
         request = req,
         name = "new_blog.html",
-        context = {}
-        )
+        context = {"session_user": session_user}
+    )
     
 @router.post("/new")
 async def create_blog(req: Request
@@ -51,7 +55,8 @@ async def create_blog(req: Request
                 , author: str = Form(max_length=100)
                 , content: str = Form(min_length=2, max_length=4000)
                 , imagefile: UploadFile | None = Form(None)
-                , conn: Connection = Depends(context_get_conn)):
+                , conn: Connection = Depends(context_get_conn)
+                , session_user = Depends(auth_svc.get_session_user_prt)):
     
     image_loc = None
     if len(imagefile.filename.strip()) > 0: # filename의 길이가 0이면 이미지 파일이 없다는 것으로 체크
@@ -63,13 +68,16 @@ async def create_blog(req: Request
     return RedirectResponse(url="/blogs", status_code=status.HTTP_302_FOUND)
     
 @router.get("/modify/{id}")
-async def update_blog_ui(req: Request, id: int, conn = Depends(context_get_conn)):
+async def update_blog_ui(req: Request, id: int
+                         , conn = Depends(context_get_conn)
+                         , session_user = Depends(auth_svc.get_session_user_prt)):
     blog = await blog_svc.get_blog_by_id(conn, id = id)
    
     return templates.TemplateResponse(
-        request = req,
-        name = "modify_blog.html",
-        context = {"blog": blog}
+        request = req
+        , name = "modify_blog.html"
+        , context = {"blog": blog
+                   , "session_user": session_user}
     )
    
 @router.post("/modify/{id}")
@@ -78,7 +86,8 @@ async def update_blog(req: Request, id: int
                 , author: str = Form(max_length=100)
                 , content: str = Form(min_length=2, max_length=4000)
                 , imagefile: UploadFile | None = Form(None)
-                , conn: Connection = Depends(context_get_conn)):
+                , conn: Connection = Depends(context_get_conn)
+                , session_user = Depends(auth_svc.get_session_user_prt)):
     
     image_loc = None
     if len(imagefile.filename.strip()) > 0: # filename의 길이가 0이면 이미지 파일이 없다는 것으로 체크
@@ -90,7 +99,9 @@ async def update_blog(req: Request, id: int
     return RedirectResponse(url=f"/blogs/show/{id}", status_code=status.HTTP_302_FOUND)
     
 @router.delete("/delete/{id}")
-async def delete_blog(req: Request, id: int, conn: Connection = Depends(context_get_conn)):
+async def delete_blog(req: Request, id: int
+                      , conn: Connection = Depends(context_get_conn)
+                      , session_user = Depends(auth_svc.get_session_user_prt)):
     
     blog = await blog_svc.get_blog_by_id(conn, id = id) # blog.image_loc를 가져오기 위함
     # 만약 get_blog_by_id() 함수에서 업로드한 이미지가 없으면 defualt 이미지를 리턴하게 설정하고 삭제를 시도하면 default로 설정한 이미지가 지워진다.

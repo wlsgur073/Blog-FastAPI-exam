@@ -83,6 +83,12 @@ async def register_user(conn: Connection, name: str, email: str, hashed_password
 def get_session(req: Request):
     return req.session
 
-def get_session_user(req: Request):
+def get_session_user_opt(req: Request): # Optional
     if "session_user" in req.session.keys():
         return req.session["session_user"]
+    
+def get_session_user_prt(req: Request): # protected
+    if "session_user" not in req.session.keys():
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="You need to login.")
+    
+    return req.session["session_user"]
