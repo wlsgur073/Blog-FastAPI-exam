@@ -31,9 +31,7 @@ This project contains a blog application built using FastAPI, SQLAlchemy, and Ji
    ```
 
 3. Install the required dependencies:
-   ```bash
-   pip install SQLAlchemy==2.0.32 mysql-connector-python==9.0.0 aiomysql==0.2.0 fastapi==0.111.0 jinja2==3.1.4
-   ```
+   check `requirements.txt`
 
 4. Set up the database:
 
