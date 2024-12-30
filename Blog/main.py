@@ -3,7 +3,6 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.middleware.sessions import SessionMiddleware
 from dotenv import load_dotenv
 import os
 
@@ -12,7 +11,7 @@ from utils.common import lifespan
 from utils import exc_handler, middleware
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(lifespan=lifespan) # lifespan이 sutdown되면 redis도 같이 shutdown되야 함.
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -27,8 +26,9 @@ app.add_middleware(CORSMiddleware
 load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY")
 # signed cookie를 사용하기 위한 secret key 설정
-app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY, max_age=3600)
+# app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY, max_age=3600)
 
+app.add_middleware(middleware.RedisSessionMiddleware)
 app.add_middleware(middleware.MethodOverrideMiddleware)
 
 app.include_router(blog.router)

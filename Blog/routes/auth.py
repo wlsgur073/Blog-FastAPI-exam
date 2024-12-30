@@ -70,11 +70,11 @@ async def login(req:Request
     if not is_correct_pw:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="The password is incorrect.")
     
-    req.session["session_user"] = {"id": userpass.id, "name": userpass.name, "email": userpass.email} # 알아서 cookie에 set됨.
+    req.state.session["session_user"] = {"id": userpass.id, "name": userpass.name, "email": userpass.email} # 알아서 cookie에 set됨.
     
     return RedirectResponse("/blogs", status_code=status.HTTP_302_FOUND)
 
 @router.get("/logout")
 async def logout(req:Request):
-    req.session.clear()
+    req.state.session.clear() # dictionary clear
     return RedirectResponse("/blogs", status_code=status.HTTP_302_FOUND)
