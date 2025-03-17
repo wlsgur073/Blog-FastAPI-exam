@@ -11,7 +11,7 @@ This project contains a blog application built using FastAPI, SQLAlchemy, and Ji
 
 ## Prerequisites
 
-- Python 3.8 or higher
+- Python 3.10
 - MySQL database instance
 
 ## Installation
@@ -23,11 +23,10 @@ This project contains a blog application built using FastAPI, SQLAlchemy, and Ji
    cd <repository-directory>
    ```
 
-2. Create a virtual environment:
+2. Create a virtual environment in Anaconda prompt:
 
    ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   conda -n fastapi python=3.10
    ```
 
 3. Install the required dependencies:
@@ -43,10 +42,8 @@ This project contains a blog application built using FastAPI, SQLAlchemy, and Ji
 
    ```bash
    cd /Blog
-   uvicorn app.main:app --reload
+   uvicorn main:app --port:8081 --reload
    ```
-
-   Replace `app.main` with the actual path to your FastAPI application if different.
 
 6. Access the application
 
